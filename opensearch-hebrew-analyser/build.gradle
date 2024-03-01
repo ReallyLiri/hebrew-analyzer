@@ -1,0 +1,104 @@
+buildscript {
+    repositories {
+        mavenLocal()
+        mavenCentral()
+        maven{
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+    dependencies {
+        classpath "org.opensearch.gradle:build-tools:${opensearchVersion}"
+        classpath "org.opensearch:opensearch-core:${opensearchVersion}"
+        classpath "org.opensearch:opensearch-common:${opensearchVersion}"
+    }
+
+}
+
+group = 'com.hotstar'
+version = "${opensearchVersion}"
+
+apply plugin: 'java'
+apply plugin: 'idea'
+apply plugin: 'opensearch.opensearchplugin'
+
+opensearchplugin {
+    name 'opensearch-analysis-hebrew'
+    description 'The Hebrew Analysis plugin module for opensearch.'
+    classname 'com.hotstar.hebrew.plugin.HebrewAnalyzerEsPlugin'
+    licenseFile = rootProject.file('LICENSE.txt')
+    noticeFile = rootProject.file('NOTICE.txt')
+}
+
+
+jar {
+    archiveBaseName.set(rootProject.name)
+}
+
+javadocJar {
+    archiveBaseName.set(rootProject.name)
+}
+
+sourcesJar {
+    archiveBaseName.set(rootProject.name)
+}
+
+
+dependencies {
+
+    testImplementation "org.apache.lucene:lucene-test-framework:${luceneVersion}"
+    testImplementation "junit:junit:4.13.2"
+    implementation "org.apache.lucene:lucene-core:${luceneVersion}"
+    implementation "org.apache.lucene:lucene-analysis-common:${luceneVersion}"
+    compileOnly "org.opensearch:opensearch:${opensearchVersion}"
+    //implementation "com.google.guava:guava:17.0"
+}
+
+forbiddenPatterns {
+    forbiddenPatterns.enabled = false;
+}
+
+licenseHeaders {
+    licenseHeaders.enabled = false
+}
+
+dependencyLicenses {
+    dependencyLicenses.enabled = false
+}
+
+validateNebulaPom {
+    validateNebulaPom.enabled = false
+}
+
+thirdPartyAudit {
+    thirdPartyAudit.enabled = false
+}
+
+loggerUsageCheck {
+    loggerUsageCheck.enabled = false
+}
+
+test {
+    systemProperty 'tests.security.manager', 'false'
+}
+
+testingConventions {
+    testingConventions.enabled = false
+}
+
+javadoc {
+    enabled = false
+}
+
+task release(type: Copy, group: 'build') {
+    dependsOn assemble
+    project.logger.debug("Copying plugin zip to plugin directory")
+    from(bundlePlugin.outputs.files.getSingleFile())
+    into "../build/plugins/${pluginName}/"
+    includeEmptyDirs = false
+}
+
+tasks.register('integTest', Test) {
+}
+
+
+
