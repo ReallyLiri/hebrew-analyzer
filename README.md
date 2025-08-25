@@ -41,6 +41,7 @@ Or using docker:
 
 ```shell
 docker build -t opensearch-hebrew-analyzers .
+docker rm opensearch-hebrew-analyzers || true
 docker create --name opensearch-hebrew-analyzers opensearch-hebrew-analyzers
 docker cp opensearch-hebrew-analyzers:/src/build/distributions/opensearch-analysis-hebrew-<version>.zip .
 ```
