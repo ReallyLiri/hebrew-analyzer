@@ -6,4 +6,4 @@ RUN apt-get update && \
 
 WORKDIR /src
 COPY opensearch-hebrew-analyser .
-RUN ./gradlew --no-daemon clean assemble -x test
+RUN ./gradlew --no-daemon clean assemble

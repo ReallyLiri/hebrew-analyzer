@@ -69,26 +69,27 @@ public class PreprocessedJsonFilter extends TokenFilter {
     }
 
     private void extractTokensFromJson() throws IOException {
-        StringBuilder fullText = new StringBuilder();
+        String text = "";
 
-        while (this.input.incrementToken()) {
-            String currentToken = this.input.getAttribute(CharTermAttribute.class).toString();
-            fullText.append(currentToken);
-            if (fullText.length() > 0 && !fullText.toString().endsWith(" ")) {
-                fullText.append(" ");
-            }
+        // Since we're using PassThroughTokenizer, we should get exactly one token with the full text
+        if (this.input.incrementToken()) {
+            text = this.input.getAttribute(CharTermAttribute.class).toString();
         }
-
-        String text = fullText.toString().trim();
 
         String lexMarker = "### LEX";
         int lexIndex = text.indexOf(lexMarker);
 
         if (lexIndex == -1) {
+            System.err.println("PreprocessedJsonFilter: No '### LEX' marker found in text (length: " + text.length() + ")");
+            if (text.length() > 0) {
+                System.err.println("Text preview (first 100 chars): " +
+                    text.substring(0, Math.min(100, text.length())));
+            }
             return;
         }
 
         String jsonPart = text.substring(lexIndex + lexMarker.length()).trim();
+        System.err.println("PreprocessedJsonFilter: Found LEX marker, JSON part length: " + jsonPart.length());
 
         try {
             ObjectMapper mapper = new ObjectMapper();
@@ -109,6 +110,13 @@ public class PreprocessedJsonFilter extends TokenFilter {
                 }
             }
         } catch (Exception e) {
+            System.err.println("PreprocessedJsonFilter: Failed to parse JSON after ### LEX marker");
+            System.err.println("Error: " + e.getMessage());
+            if (jsonPart != null) {
+                System.err.println("JSON part (first 200 chars): " +
+                    jsonPart.substring(0, Math.min(200, jsonPart.length())));
+            }
+            e.printStackTrace();
         }
     }
 
