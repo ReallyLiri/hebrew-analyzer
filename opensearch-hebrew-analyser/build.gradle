@@ -50,6 +50,7 @@ dependencies {
     implementation "org.apache.lucene:lucene-core:${luceneVersion}"
     implementation "org.apache.lucene:lucene-analysis-common:${luceneVersion}"
     compileOnly "org.opensearch:opensearch:${opensearchVersion}"
+    implementation "com.fasterxml.jackson.core:jackson-databind:2.15.2"
     //implementation "com.google.guava:guava:17.0"
 }
 

@@ -34,6 +34,7 @@ public class HebrewAnalyzerOsPlugin extends Plugin implements AnalysisPlugin {
         analyser.put("hebrew-ngram-3-analyzer", HebrewNgramAnalyzerProvider::new);
         analyser.put("hebrew_semi_exact_analyzer", HebrewSemiExactAnalyzerProvider::new);
         analyser.put("hebrew_semi_exact_analyzer_extended", HebrewSemiExactExtendedAnalyzerProvider::new);
+        analyser.put("preprocessed_json", PreprocessedJsonAnalyzerProvider::new);
         return analyser;
     }
 }
