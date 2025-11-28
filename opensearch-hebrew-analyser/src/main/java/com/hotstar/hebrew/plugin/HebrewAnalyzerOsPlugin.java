@@ -33,6 +33,7 @@ public class HebrewAnalyzerOsPlugin extends Plugin implements AnalysisPlugin {
         Map<String, AnalysisModule.AnalysisProvider<AnalyzerProvider<? extends Analyzer>>> analyser = new HashMap<>();
         analyser.put("hebrew-ngram-3-analyzer", HebrewNgramAnalyzerProvider::new);
         analyser.put("hebrew_semi_exact_analyzer", HebrewSemiExactAnalyzerProvider::new);
+        analyser.put("hebrew_semi_exact_analyzer_extended", HebrewSemiExactExtendedAnalyzerProvider::new);
         return analyser;
     }
 }

@@ -9,14 +9,14 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SefariaSemiExactFilterTest {
+public class SefariaSemiExactExtendedFilterTest {
 
     public void testHebrewPrefixTokenization() throws IOException {
         String input = "הספר";
         TokenStream tokenStream = new KeywordTokenizer();
         ((KeywordTokenizer) tokenStream).setReader(new StringReader(input));
 
-        SefariaSemiExactFilter filter = new SefariaSemiExactFilter(tokenStream);
+        SefariaSemiExactExtendedFilter filter = new SefariaSemiExactExtendedFilter(tokenStream);
 
         List<String> tokens = new ArrayList<>();
         CharTermAttribute charTermAttribute = filter.addAttribute(CharTermAttribute.class);
@@ -37,7 +37,7 @@ public class SefariaSemiExactFilterTest {
         TokenStream tokenStream = new KeywordTokenizer();
         ((KeywordTokenizer) tokenStream).setReader(new StringReader(input));
 
-        SefariaSemiExactFilter filter = new SefariaSemiExactFilter(tokenStream);
+        SefariaSemiExactExtendedFilter filter = new SefariaSemiExactExtendedFilter(tokenStream);
 
         List<String> tokens = new ArrayList<>();
         CharTermAttribute charTermAttribute = filter.addAttribute(CharTermAttribute.class);
