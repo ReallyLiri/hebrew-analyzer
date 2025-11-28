@@ -44,28 +44,59 @@ public class PreprocessedJsonFilter extends TokenFilter {
 
     @Override
     public boolean incrementToken() throws IOException {
-        if (!tokensExtracted) {
-            extractTokensFromJson();
-            tokensExtracted = true;
+        try {
+            if (!tokensExtracted) {
+                try {
+                    extractTokensFromJson();
+                    tokensExtracted = true;
+                } catch (Exception e) {
+                    System.err.println("PreprocessedJsonFilter: Error extracting tokens: " + e.getMessage());
+                    e.printStackTrace();
+                    tokensExtracted = true; // Prevent retry
+                    return false;
+                }
+            }
+
+            if (currentTokenIndex < extractedTokens.size()) {
+                try {
+                    TokenData tokenData = extractedTokens.get(currentTokenIndex);
+
+                    if (tokenData == null || tokenData.token == null) {
+                        System.err.println("PreprocessedJsonFilter: Null token data at index " + currentTokenIndex);
+                        currentTokenIndex++;
+                        return incrementToken(); // Try next token
+                    }
+
+                    this.charTermAttribute.setEmpty();
+                    this.charTermAttribute.append(tokenData.token);
+
+                    this.offsetAttribute.setOffset(tokenData.startOffset, tokenData.endOffset);
+
+                    int positionIncrement = currentTokenIndex == 0 ? 1 :
+                        (tokenData.position - extractedTokens.get(currentTokenIndex - 1).position);
+
+                    this.positionIncrementAttribute.setPositionIncrement(positionIncrement);
+
+                    currentTokenIndex++;
+                    return true;
+                } catch (Exception e) {
+                    System.err.println("PreprocessedJsonFilter: Error setting token attributes: " + e.getMessage());
+                    e.printStackTrace();
+                    currentTokenIndex++;
+                    // Try to continue with next token
+                    if (currentTokenIndex < extractedTokens.size()) {
+                        return incrementToken();
+                    }
+                    return false;
+                }
+            }
+
+            return false;
+        } catch (Exception e) {
+            System.err.println("PreprocessedJsonFilter: Unexpected error in incrementToken: " + e.getMessage());
+            e.printStackTrace();
+            return false;
         }
-
-        if (currentTokenIndex < extractedTokens.size()) {
-            TokenData tokenData = extractedTokens.get(currentTokenIndex);
-
-            this.charTermAttribute.setEmpty();
-            this.charTermAttribute.append(tokenData.token);
-
-            this.offsetAttribute.setOffset(tokenData.startOffset, tokenData.endOffset);
-            this.positionIncrementAttribute.setPositionIncrement(
-                currentTokenIndex == 0 ? 1 :
-                (tokenData.position - extractedTokens.get(currentTokenIndex - 1).position)
-            );
-
-            currentTokenIndex++;
-            return true;
-        }
-
-        return false;
     }
 
     private void extractTokensFromJson() throws IOException {
@@ -122,9 +153,24 @@ public class PreprocessedJsonFilter extends TokenFilter {
 
     @Override
     public void reset() throws IOException {
-        super.reset();
-        extractedTokens.clear();
-        currentTokenIndex = 0;
-        tokensExtracted = false;
+        try {
+            super.reset();
+        } catch (Exception e) {
+            System.err.println("PreprocessedJsonFilter: Error in super.reset(): " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        try {
+            extractedTokens.clear();
+            currentTokenIndex = 0;
+            tokensExtracted = false;
+        } catch (Exception e) {
+            System.err.println("PreprocessedJsonFilter: Error resetting state: " + e.getMessage());
+            e.printStackTrace();
+            // Ensure we reset state even if clear fails
+            extractedTokens = new ArrayList<>();
+            currentTokenIndex = 0;
+            tokensExtracted = false;
+        }
     }
 }

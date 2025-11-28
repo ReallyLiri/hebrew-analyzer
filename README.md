@@ -40,15 +40,16 @@ cd opensearch-hebrew-analyzers
 Or using docker:
 
 ```shell
+VERSION="3.2.0"
 docker build -t opensearch-hebrew-analyzers .
 docker rm opensearch-hebrew-analyzers || true
 docker create --name opensearch-hebrew-analyzers opensearch-hebrew-analyzers
-docker cp opensearch-hebrew-analyzers:/src/build/distributions/opensearch-analysis-hebrew-<version>.zip opensearch-hebrew-analyser/out/artifacts/
+docker cp opensearch-hebrew-analyzers:/src/build/distributions/opensearch-analysis-hebrew-${VERSION}.zip opensearch-hebrew-analyser/out/artifacts/
 docker rm opensearch-hebrew-analyzers || true
 ```
 
 Install the plugin via OpenSearch CLI:
 
 ```shell
-./opensearch-plugin install file:///path/to/opensearch-hebrew-analyzers-<version>.zip
+./opensearch-plugin install file:///path/to/opensearch-hebrew-analyzers-${VERSION}.zip
 ```
