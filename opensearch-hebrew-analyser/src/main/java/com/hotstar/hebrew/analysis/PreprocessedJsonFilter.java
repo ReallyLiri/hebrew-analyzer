@@ -6,8 +6,9 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.opensearch.common.xcontent.XContentParser;
+import org.opensearch.common.xcontent.XContentType;
+import org.opensearch.common.xcontent.XContentFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -123,23 +124,50 @@ public class PreprocessedJsonFilter extends TokenFilter {
         System.err.println("PreprocessedJsonFilter: Found LEX marker, JSON part length: " + jsonPart.length());
 
         try {
-            ObjectMapper mapper = new ObjectMapper();
-            JsonNode rootNode = mapper.readTree(jsonPart);
-            JsonNode tokensNode = rootNode.get("tokens");
+            XContentParser parser = XContentFactory.xContent(XContentType.JSON).createParser(
+                org.opensearch.common.xcontent.NamedXContentRegistry.EMPTY,
+                org.opensearch.common.xcontent.DeprecationHandler.THROW_UNSUPPORTED_OPERATION,
+                jsonPart
+            );
 
-            if (tokensNode != null && tokensNode.isArray()) {
-                int previousPosition = -1;
-                for (JsonNode tokenNode : tokensNode) {
-                    String token = tokenNode.get("token").asText();
-                    int startOffset = tokenNode.get("start_offset").asInt();
-                    int endOffset = tokenNode.get("end_offset").asInt();
-                    int position = tokenNode.get("position").asInt();
+            // Parse the JSON structure
+            while (parser.nextToken() != null) {
+                if (parser.currentName() != null && parser.currentName().equals("tokens")) {
+                    parser.nextToken(); // Move to array start
+                    if (parser.currentToken() == XContentParser.Token.START_ARRAY) {
+                        while (parser.nextToken() != XContentParser.Token.END_ARRAY) {
+                            if (parser.currentToken() == XContentParser.Token.START_OBJECT) {
+                                String token = null;
+                                Integer startOffset = null;
+                                Integer endOffset = null;
+                                Integer position = null;
 
-                    if (token != null && !token.trim().isEmpty() && !token.equals("[BLANK]")) {
-                        extractedTokens.add(new TokenData(token, startOffset, endOffset, position));
+                                while (parser.nextToken() != XContentParser.Token.END_OBJECT) {
+                                    String fieldName = parser.currentName();
+                                    parser.nextToken();
+
+                                    if ("token".equals(fieldName)) {
+                                        token = parser.text();
+                                    } else if ("start_offset".equals(fieldName)) {
+                                        startOffset = parser.intValue();
+                                    } else if ("end_offset".equals(fieldName)) {
+                                        endOffset = parser.intValue();
+                                    } else if ("position".equals(fieldName)) {
+                                        position = parser.intValue();
+                                    }
+                                }
+
+                                if (token != null && !token.trim().isEmpty() && !token.equals("[BLANK]")
+                                    && startOffset != null && endOffset != null && position != null) {
+                                    extractedTokens.add(new TokenData(token, startOffset, endOffset, position));
+                                }
+                            }
+                        }
                     }
+                    break; // Found tokens array, we're done
                 }
             }
+            parser.close();
         } catch (Exception e) {
             System.err.println("PreprocessedJsonFilter: Failed to parse JSON after ### LEX marker");
             System.err.println("Error: " + e.getMessage());
