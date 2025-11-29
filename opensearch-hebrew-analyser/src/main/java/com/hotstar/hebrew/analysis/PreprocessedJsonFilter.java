@@ -6,9 +6,8 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 
-import org.opensearch.common.xcontent.XContentParser;
-import org.opensearch.common.xcontent.XContentType;
-import org.opensearch.common.xcontent.XContentFactory;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -124,50 +123,8 @@ public class PreprocessedJsonFilter extends TokenFilter {
         System.err.println("PreprocessedJsonFilter: Found LEX marker, JSON part length: " + jsonPart.length());
 
         try {
-            XContentParser parser = XContentFactory.xContent(XContentType.JSON).createParser(
-                org.opensearch.common.xcontent.NamedXContentRegistry.EMPTY,
-                org.opensearch.common.xcontent.DeprecationHandler.THROW_UNSUPPORTED_OPERATION,
-                jsonPart
-            );
-
-            // Parse the JSON structure
-            while (parser.nextToken() != null) {
-                if (parser.currentName() != null && parser.currentName().equals("tokens")) {
-                    parser.nextToken(); // Move to array start
-                    if (parser.currentToken() == XContentParser.Token.START_ARRAY) {
-                        while (parser.nextToken() != XContentParser.Token.END_ARRAY) {
-                            if (parser.currentToken() == XContentParser.Token.START_OBJECT) {
-                                String token = null;
-                                Integer startOffset = null;
-                                Integer endOffset = null;
-                                Integer position = null;
-
-                                while (parser.nextToken() != XContentParser.Token.END_OBJECT) {
-                                    String fieldName = parser.currentName();
-                                    parser.nextToken();
-
-                                    if ("token".equals(fieldName)) {
-                                        token = parser.text();
-                                    } else if ("start_offset".equals(fieldName)) {
-                                        startOffset = parser.intValue();
-                                    } else if ("end_offset".equals(fieldName)) {
-                                        endOffset = parser.intValue();
-                                    } else if ("position".equals(fieldName)) {
-                                        position = parser.intValue();
-                                    }
-                                }
-
-                                if (token != null && !token.trim().isEmpty() && !token.equals("[BLANK]")
-                                    && startOffset != null && endOffset != null && position != null) {
-                                    extractedTokens.add(new TokenData(token, startOffset, endOffset, position));
-                                }
-                            }
-                        }
-                    }
-                    break; // Found tokens array, we're done
-                }
-            }
-            parser.close();
+            // Use basic regex parsing to avoid any external dependencies
+            parseTokensWithRegex(jsonPart);
         } catch (Exception e) {
             System.err.println("PreprocessedJsonFilter: Failed to parse JSON after ### LEX marker");
             System.err.println("Error: " + e.getMessage());
@@ -175,6 +132,44 @@ public class PreprocessedJsonFilter extends TokenFilter {
                 System.err.println("JSON part (first 200 chars): " +
                     jsonPart.substring(0, Math.min(200, jsonPart.length())));
             }
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Parse tokens using basic regex to avoid external JSON dependencies
+     */
+    private void parseTokensWithRegex(String jsonPart) {
+        try {
+            // Simple regex to find token objects in the JSON
+            // Pattern matches: "token": "value", "start_offset": number, "end_offset": number, "position": number
+            Pattern tokenPattern = Pattern.compile(
+                "\\{[^}]*\"token\":\\s*\"([^\"]*?)\"[^}]*\"start_offset\":\\s*(\\d+)[^}]*\"end_offset\":\\s*(\\d+)[^}]*\"position\":\\s*(\\d+)[^}]*\\}",
+                Pattern.DOTALL
+            );
+
+            Matcher matcher = tokenPattern.matcher(jsonPart);
+
+            while (matcher.find()) {
+                try {
+                    String token = matcher.group(1);
+                    int startOffset = Integer.parseInt(matcher.group(2));
+                    int endOffset = Integer.parseInt(matcher.group(3));
+                    int position = Integer.parseInt(matcher.group(4));
+
+                    // Filter out blank tokens
+                    if (token != null && !token.trim().isEmpty() && !token.equals("[BLANK]")) {
+                        extractedTokens.add(new TokenData(token, startOffset, endOffset, position));
+                    }
+                } catch (NumberFormatException e) {
+                    System.err.println("PreprocessedJsonFilter: Invalid number in token: " + e.getMessage());
+                }
+            }
+
+            System.err.println("PreprocessedJsonFilter: Extracted " + extractedTokens.size() + " tokens using regex parsing");
+
+        } catch (Exception e) {
+            System.err.println("PreprocessedJsonFilter: Error in regex parsing: " + e.getMessage());
             e.printStackTrace();
         }
     }

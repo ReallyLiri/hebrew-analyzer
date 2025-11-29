@@ -1,7 +1,6 @@
 package com.hotstar.hebrew.plugin;
 
 import com.hotstar.hebrew.analysis.PreprocessedJsonAnalyzer;
-import com.hotstar.hebrew.analysis.SafePreprocessedJsonAnalyzer;
 import org.opensearch.common.settings.Settings;
 import org.opensearch.env.Environment;
 import org.opensearch.index.IndexSettings;
@@ -12,13 +11,12 @@ public class PreprocessedJsonAnalyzerProvider extends AbstractIndexAnalyzerProvi
     public PreprocessedJsonAnalyzerProvider(IndexSettings indexSettings, Environment environment, String name, Settings settings) {
         super(indexSettings, name, settings);
         try {
-            // Use safe wrapper to prevent OpenSearch crashes
-            analyzer = new SafePreprocessedJsonAnalyzer();
-            System.err.println("PreprocessedJsonAnalyzerProvider: Successfully created SafePreprocessedJsonAnalyzer");
+            analyzer = new PreprocessedJsonAnalyzer();
+            System.err.println("PreprocessedJsonAnalyzerProvider: Successfully created PreprocessedJsonAnalyzer");
         } catch (Throwable e) {
             System.err.println("PreprocessedJsonAnalyzerProvider: CRITICAL ERROR creating analyzer: " + e.getMessage());
             e.printStackTrace();
-            // Fallback to basic analyzer - don't let plugin registration fail
+            // This should never fail now, but just in case
             analyzer = new PreprocessedJsonAnalyzer();
         }
     }
